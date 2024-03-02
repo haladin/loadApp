@@ -1,5 +1,6 @@
 package com.udacity
 
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
@@ -28,6 +29,7 @@ class LoadingButton @JvmOverloads constructor(
     private var circleAnimator = ValueAnimator.ofInt(0, 360).apply {
         duration = time
         interpolator = DecelerateInterpolator()
+        repeatCount = ObjectAnimator.INFINITE
         addUpdateListener {
             circleCircumference = it.animatedValue as Int
             invalidate()
@@ -104,11 +106,9 @@ class LoadingButton @JvmOverloads constructor(
         widthAnimator = ValueAnimator.ofInt(0, width)
         widthAnimator.duration = time
         widthAnimator.interpolator = DecelerateInterpolator()
+        widthAnimator.repeatCount = ObjectAnimator.INFINITE
         widthAnimator.addUpdateListener {
             animatedWidth = (it.animatedValue as Int).toFloat()
-            if (animatedWidth >= width) {
-                startOver()
-            }
             invalidate()
         }
 
@@ -144,14 +144,5 @@ class LoadingButton @JvmOverloads constructor(
         widthSize = w
         heightSize = h
         setMeasuredDimension(w, h)
-    }
-
-    private fun startOver() {
-        animatedWidth = 0F
-        circleCircumference = 0
-        widthAnimator.cancel()
-        circleAnimator.cancel()
-        widthAnimator.start()
-        circleAnimator.start()
     }
 }

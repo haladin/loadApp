@@ -4,11 +4,11 @@ import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -18,6 +18,7 @@ import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.udacity.databinding.ActivityMainBinding
 import com.udacity.model.URLS
@@ -39,8 +40,8 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
-
         registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+
         val radioGroup = binding.content.radioGroup
 
         for (url in URLS) {
@@ -69,10 +70,12 @@ class MainActivity : AppCompatActivity() {
                 binding.content.customButton.state(ButtonState.Completed)
             } else {
                 URLS.find { it.id == radioGroup.checkedRadioButtonId }?.let {
-                    download(it.url)
+                    download(it.id)
                 }
             }
         }
+
+        askNotificationPermission()
 
         createChannel(
             getString(R.string.download_notification_channel_id),
@@ -105,10 +108,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun download(url: String) {
-        val filename = url.split('/').last()
+    private fun download(id: Int) {
+        val item = URLS.find { it.id == id }
+        val filename = "${item?.description}.zip"
         val request =
-            DownloadManager.Request(Uri.parse(url))
+            DownloadManager.Request(Uri.parse(item?.url))
                 .setTitle(getString(R.string.app_name))
                 .setDescription(getString(R.string.app_description))
                 .setRequiresCharging(false)
@@ -121,6 +125,22 @@ class MainActivity : AppCompatActivity() {
             downloadManager.enqueue(request)// enqueue puts the download request in the queue.
 
         downloadMap[downloadID] = filename
+    }
+
+    private fun askNotificationPermission() {
+        // This is only necessary for API level >= 33 (TIRAMISU)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    listOf(android.Manifest.permission.POST_NOTIFICATIONS).toTypedArray(), 0
+                )
+            }
+        }
     }
 
     private fun createChannel(channelId: String, channelName: String) {
